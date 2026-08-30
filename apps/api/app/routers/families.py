@@ -30,4 +30,5 @@ def create_family_endpoint(
             )
             for invite in family.invites
         ],
+        whatsapp_group_created=family.whatsapp_group_id is not None,
     )

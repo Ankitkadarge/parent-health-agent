@@ -34,3 +34,19 @@ def client(db_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def mock_whatsapp_group_creation(monkeypatch):
+    """Family creation calls out to the real WhatsApp bridge over HTTP.
+    Tests must never depend on a live external service — default to a
+    deterministic fake success; individual tests can monkeypatch this again
+    to exercise the failure path.
+    """
+
+    def fake_create_whatsapp_group(subject: str, member_phones_e164: list[str]) -> str:
+        return "123456789012345678@g.us"
+
+    monkeypatch.setattr(
+        "app.services.family_service.create_whatsapp_group", fake_create_whatsapp_group
+    )

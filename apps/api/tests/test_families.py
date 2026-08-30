@@ -36,6 +36,9 @@ def test_create_family_success(client, db_session):
     for invite in body["invites"]:
         assert invite["token"] in invite["invite_url"]
 
+    assert body["whatsapp_group_created"] is True
+    assert family.whatsapp_group_id == "123456789012345678@g.us"
+
     invites = db_session.query(FamilyInvite).filter(FamilyInvite.family_id == family_id).all()
     assert len(invites) == 2
     assert all(invite.used_at is None for invite in invites)
@@ -63,6 +66,30 @@ def test_create_family_without_consent_is_rejected(client):
 def test_create_family_with_invalid_phone_is_rejected(client):
     response = client.post("/families", json=valid_payload(child_phone="not-a-number"))
     assert response.status_code == 422
+
+
+def test_create_family_succeeds_even_if_whatsapp_group_creation_fails(
+    client, db_session, monkeypatch
+):
+    from app.services.whatsapp_group_service import WhatsappGroupCreationError
+
+    def failing_create_whatsapp_group(subject, member_phones_e164):
+        raise WhatsappGroupCreationError("Could not reach WhatsApp bridge: connection refused")
+
+    monkeypatch.setattr(
+        "app.services.family_service.create_whatsapp_group", failing_create_whatsapp_group
+    )
+
+    response = client.post("/families", json=valid_payload())
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["whatsapp_group_created"] is False
+    assert len(body["invites"]) == 2
+
+    family_id = uuid.UUID(body["family_id"])
+    family = db_session.get(Family, family_id)
+    assert family.whatsapp_group_id is None
 
 
 def test_create_family_with_already_e164_phone(client, db_session):
