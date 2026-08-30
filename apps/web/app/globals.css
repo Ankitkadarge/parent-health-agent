@@ -1,0 +1,162 @@
+:root {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-primary: #1e7a5f;
+  --color-primary-dark: #145c47;
+  --color-text: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-error: #b3261e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 64px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.hero h1 {
+  font-size: 2.1rem;
+  line-height: 1.25;
+  margin: 0 0 12px;
+  color: var(--color-text);
+}
+
+.hero p {
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+input,
+select {
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.consent-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 400;
+}
+
+.consent-row input {
+  margin-top: 3px;
+}
+
+button {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: var(--color-error);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.success-card h2 {
+  margin: 0;
+  color: var(--color-primary-dark);
+}
+
+.success-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.family-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
