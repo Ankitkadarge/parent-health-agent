@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ApiError, createFamily } from "@/lib/api";
+import { ApiError, createFamily, FamilyInvite } from "@/lib/api";
 
 const LANGUAGE_OPTIONS = [
   "English",
@@ -38,6 +38,8 @@ export default function FamilySignupForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string | null>(null);
+  const [invites, setInvites] = useState<FamilyInvite[]>([]);
+  const [groupCreated, setGroupCreated] = useState(false);
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -58,6 +60,8 @@ export default function FamilySignupForm() {
         consent: form.consent,
       });
       setFamilyId(result.family_id);
+      setInvites(result.invites);
+      setGroupCreated(result.whatsapp_group_created);
       setStatus("success");
     } catch (err) {
       setStatus("error");
@@ -68,70 +72,110 @@ export default function FamilySignupForm() {
   }
 
   if (status === "success" && familyId) {
+    const parentFirstName = form.parentName.split(" ")[0] || "your parent";
+    const childInvite = invites.find((invite) => invite.role === "child");
+    const parentInvite = invites.find((invite) => invite.role === "parent");
+
     return (
-      <div className="card success-card">
-        <h2>You&apos;re on the list</h2>
-        <p>
-          We&apos;ve created your family profile. We&apos;ll reach out on WhatsApp to connect
-          with {form.parentName.split(" ")[0] || "your parent"} soon.
-        </p>
-        <p className="family-id">Reference ID: {familyId}</p>
+      <div className="success-state">
+        <div className="success-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path
+              d="m5 12.5 4.5 4.5L19 7.5"
+              stroke="#fff"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <p className="success-title">You&apos;re on the list</p>
+        {groupCreated ? (
+          <p className="success-sub">
+            We&apos;ve created a WhatsApp group with you and {parentFirstName} — check WhatsApp
+            now to get started.
+          </p>
+        ) : (
+          <p className="success-sub">
+            We&apos;ve created your family profile. Use the links below on WhatsApp to verify
+            yourself and {parentFirstName}.
+          </p>
+        )}
+
+        <div className="invite-links">
+          {childInvite && (
+            <a href={childInvite.invite_url} target="_blank" rel="noreferrer">
+              Your verification link
+            </a>
+          )}
+          {parentInvite && (
+            <a href={parentInvite.invite_url} target="_blank" rel="noreferrer">
+              {parentFirstName}&apos;s verification link
+            </a>
+          )}
+        </div>
+
+        <p className="reference-id">Reference ID: {familyId}</p>
       </div>
     );
   }
 
   return (
-    <form className="card" onSubmit={handleSubmit}>
-      <fieldset>
-        <legend>Your details</legend>
-
-        <label htmlFor="childName">Your name</label>
-        <input
-          id="childName"
-          required
-          value={form.childName}
-          onChange={(e) => updateField("childName", e.target.value)}
-          placeholder="e.g. Priya Shah"
-        />
-
-        <label htmlFor="childPhone">Your WhatsApp number</label>
-        <input
-          id="childPhone"
-          required
-          type="tel"
-          value={form.childPhone}
-          onChange={(e) => updateField("childPhone", e.target.value)}
-          placeholder="e.g. +91 98765 43210"
-        />
+    <form className="form" onSubmit={handleSubmit}>
+      <fieldset className="form-fieldset">
+        <legend className="form-legend">Your details</legend>
+        <div className="form-row">
+          <input
+            id="childName"
+            required
+            value={form.childName}
+            onChange={(e) => updateField("childName", e.target.value)}
+            placeholder="Your name"
+            aria-label="Your name"
+            disabled={status === "submitting"}
+          />
+          <input
+            id="childPhone"
+            required
+            type="tel"
+            value={form.childPhone}
+            onChange={(e) => updateField("childPhone", e.target.value)}
+            placeholder="Your WhatsApp number"
+            aria-label="Your WhatsApp number"
+            disabled={status === "submitting"}
+          />
+        </div>
       </fieldset>
 
-      <fieldset>
-        <legend>Your parent&apos;s details</legend>
-
-        <label htmlFor="parentName">Parent&apos;s name</label>
-        <input
-          id="parentName"
-          required
-          value={form.parentName}
-          onChange={(e) => updateField("parentName", e.target.value)}
-          placeholder="e.g. Ramesh Shah"
-        />
-
-        <label htmlFor="parentPhone">Parent&apos;s WhatsApp number</label>
-        <input
-          id="parentPhone"
-          required
-          type="tel"
-          value={form.parentPhone}
-          onChange={(e) => updateField("parentPhone", e.target.value)}
-          placeholder="e.g. +91 98765 00000"
-        />
-
-        <label htmlFor="parentLanguage">Parent&apos;s preferred language</label>
+      <fieldset className="form-fieldset">
+        <legend className="form-legend">Your parent&apos;s details</legend>
+        <div className="form-row">
+          <input
+            id="parentName"
+            required
+            value={form.parentName}
+            onChange={(e) => updateField("parentName", e.target.value)}
+            placeholder="Parent's name"
+            aria-label="Parent's name"
+            disabled={status === "submitting"}
+          />
+          <input
+            id="parentPhone"
+            required
+            type="tel"
+            value={form.parentPhone}
+            onChange={(e) => updateField("parentPhone", e.target.value)}
+            placeholder="Parent's WhatsApp number"
+            aria-label="Parent's WhatsApp number"
+            disabled={status === "submitting"}
+          />
+        </div>
         <select
           id="parentLanguage"
           value={form.parentLanguage}
           onChange={(e) => updateField("parentLanguage", e.target.value)}
+          aria-label="Parent's preferred language"
+          disabled={status === "submitting"}
         >
           {LANGUAGE_OPTIONS.map((lang) => (
             <option key={lang} value={lang}>
@@ -141,12 +185,13 @@ export default function FamilySignupForm() {
         </select>
       </fieldset>
 
-      <label className="consent-row">
+      <label className="form-check">
         <input
           type="checkbox"
           checked={form.consent}
           onChange={(e) => updateField("consent", e.target.checked)}
           required
+          disabled={status === "submitting"}
         />
         <span>
           I confirm my parent has agreed to receive WhatsApp messages from this service about
@@ -154,7 +199,7 @@ export default function FamilySignupForm() {
         </span>
       </label>
 
-      {status === "error" && errorMessage && <p className="error-text">{errorMessage}</p>}
+      {status === "error" && errorMessage && <div className="error-msg">{errorMessage}</div>}
 
       <button type="submit" disabled={status === "submitting"}>
         {status === "submitting" ? "Submitting…" : "Get started"}

@@ -7,8 +7,17 @@ export type FamilyCreatePayload = {
   consent: boolean;
 };
 
+export type FamilyInvite = {
+  role: "child" | "parent";
+  token: string;
+  invite_url: string;
+  expires_at: string;
+};
+
 export type FamilyCreateResponse = {
   family_id: string;
+  invites: FamilyInvite[];
+  whatsapp_group_created: boolean;
 };
 
 export class ApiError extends Error {
