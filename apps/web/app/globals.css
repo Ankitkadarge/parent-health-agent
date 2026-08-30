@@ -163,13 +163,13 @@ button{cursor:pointer}
 .form-fieldset{display:flex;flex-direction:column;gap:10px;border:0;padding:0;margin:0}
 .form-legend{font-size:13px;font-weight:750;letter-spacing:.03em;text-transform:uppercase;color:#a9c0b1;padding:0;margin-bottom:2px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form input,.form select{width:100%;min-width:0;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:16px 20px;outline:none;appearance:none}
+.form input:not([type="checkbox"]),.form select{width:100%;min-width:0;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:16px 20px;outline:none;appearance:none}
 .form select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 18px center;background-size:16px}
 .form select option{color:#15251d}
 .form input::placeholder{color:#c9d7ce}
 .form input:focus,.form select:focus{border-color:rgba(255,255,255,.5)}
 .form-check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:#dce8e1;line-height:1.5}
-.form-check input{width:auto;flex:0 0 auto;margin-top:3px}
+.form-check input{width:18px;height:18px;flex:0 0 auto;margin-top:3px;accent-color:#fff;cursor:pointer}
 .form button{width:100%;border:0;background:#fff;color:#173d2d;border-radius:999px;padding:16px 22px;font-weight:850;transition:.2s ease}.form button:hover:not(:disabled){background:#e9f5ee}.form button:disabled{opacity:.6;cursor:default}
 .error-msg{margin-top:5px;color:#f6c8c0;font-weight:700;font-size:14px}
 
