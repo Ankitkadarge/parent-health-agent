@@ -1,7 +1,9 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.models.family import FamilyStatus
 from app.models.member import MemberRole
 from app.models.onboarding_session import OnboardingSessionStatus
 from app.services.onboarding_questions import OnboardingQuestion
@@ -27,5 +29,19 @@ class WhatsappContextOut(BaseModel):
     member_id: uuid.UUID | None = None
     role: MemberRole | None = None
     target_role: str | None = None
+    waiting_on_role: str | None = None
     current_step: str | None = None
     question: OnboardingQuestion | None = None
+
+
+class WhatsappJoinRequest(BaseModel):
+    token: str
+    phone: str
+
+
+class WhatsappJoinResponse(BaseModel):
+    family_id: uuid.UUID
+    member_id: uuid.UUID
+    role: MemberRole
+    verified_at: datetime
+    family_status: FamilyStatus

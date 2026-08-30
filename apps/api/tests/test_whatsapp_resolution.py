@@ -1,6 +1,3 @@
-import uuid
-
-
 def create_family(client, child_phone="9876543210", parent_phone="9876500000"):
     payload = {
         "child_name": "Aarav Shah",
@@ -10,8 +7,18 @@ def create_family(client, child_phone="9876543210", parent_phone="9876500000"):
         "parent_preferred_language": "English",
         "consent": True,
     }
-    family_id = client.post("/families", json=payload).json()["family_id"]
-    return family_id, "+919876543210", "+919876500000"
+    body = client.post("/families", json=payload).json()
+    tokens = {invite["role"]: invite["token"] for invite in body["invites"]}
+    return body["family_id"], "+919876543210", "+919876500000", tokens
+
+
+def join(client, token, phone):
+    return client.post("/whatsapp/join", json={"token": token, "phone": phone})
+
+
+def verify_both(client, tokens, child_phone, parent_phone):
+    assert join(client, tokens["child"], child_phone).status_code == 200
+    assert join(client, tokens["parent"], parent_phone).status_code == 200
 
 
 def answer(client, family_id, member_role, key, value):
@@ -32,7 +39,7 @@ def complete_onboarding(client, family_id):
 
 
 def test_resolve_known_child(client):
-    family_id, child_phone, _ = create_family(client)
+    family_id, child_phone, _, _ = create_family(client)
 
     response = client.get("/whatsapp/resolve", params={"phone": child_phone})
     assert response.status_code == 200
@@ -47,7 +54,7 @@ def test_resolve_known_child(client):
 
 
 def test_resolve_known_parent(client):
-    family_id, _, parent_phone = create_family(client)
+    family_id, _, parent_phone, _ = create_family(client)
 
     response = client.get("/whatsapp/resolve", params={"phone": parent_phone})
     assert response.status_code == 200
@@ -68,8 +75,33 @@ def test_context_unknown_phone_is_404(client):
     assert response.status_code == 404
 
 
-def test_context_pending_onboarding(client):
-    family_id, child_phone, _ = create_family(client)
+def test_context_unverified_sender_gets_verify_or_join(client):
+    family_id, child_phone, _, _ = create_family(client)
+
+    response = client.get("/whatsapp/context", params={"phone": child_phone})
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["action"] == "verify_or_join"
+    assert body["family_id"] == family_id
+    assert body["role"] == "child"
+
+
+def test_context_waiting_for_verification_after_one_member_joins(client):
+    family_id, child_phone, parent_phone, tokens = create_family(client)
+    join(client, tokens["child"], child_phone)
+
+    child_context = client.get("/whatsapp/context", params={"phone": child_phone}).json()
+    assert child_context["action"] == "waiting_for_verification"
+    assert child_context["waiting_on_role"] == "parent"
+
+    parent_context = client.get("/whatsapp/context", params={"phone": parent_phone}).json()
+    assert parent_context["action"] == "verify_or_join"
+
+
+def test_context_start_onboarding_after_both_verified(client):
+    family_id, child_phone, parent_phone, tokens = create_family(client)
+    verify_both(client, tokens, child_phone, parent_phone)
 
     response = client.get("/whatsapp/context", params={"phone": child_phone})
     assert response.status_code == 200
@@ -81,7 +113,8 @@ def test_context_pending_onboarding(client):
 
 
 def test_context_in_progress_question_targeted_to_sender(client):
-    family_id, _, parent_phone = create_family(client)
+    family_id, child_phone, parent_phone, tokens = create_family(client)
+    verify_both(client, tokens, child_phone, parent_phone)
     client.post(f"/families/{family_id}/onboarding/start")
 
     response = client.get("/whatsapp/context", params={"phone": parent_phone})
@@ -97,7 +130,8 @@ def test_context_in_progress_question_targeted_to_sender(client):
 
 
 def test_context_in_progress_question_targeted_to_other_member(client):
-    family_id, child_phone, _ = create_family(client)
+    family_id, child_phone, parent_phone, tokens = create_family(client)
+    verify_both(client, tokens, child_phone, parent_phone)
     client.post(f"/families/{family_id}/onboarding/start")
 
     response = client.get("/whatsapp/context", params={"phone": child_phone})
@@ -113,7 +147,8 @@ def test_context_in_progress_question_targeted_to_other_member(client):
 
 
 def test_context_completed_onboarding(client):
-    family_id, child_phone, parent_phone = create_family(client)
+    family_id, child_phone, parent_phone, tokens = create_family(client)
+    verify_both(client, tokens, child_phone, parent_phone)
     complete_onboarding(client, family_id)
 
     child_response = client.get("/whatsapp/context", params={"phone": child_phone})

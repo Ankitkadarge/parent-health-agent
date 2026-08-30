@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.models.family import Family, OnboardingStatus
+from app.models.family import Family, FamilyStatus
 from app.models.member import Member, MemberRole
 from app.schemas.family import FamilyCreateRequest
 from app.services.onboarding_service import initialize_onboarding
+from app.services.verification_service import create_invites_for_family
 from app.utils.phone import to_e164
 
 
@@ -17,7 +18,7 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
     child_phone = to_e164(data.child_phone)
     parent_phone = to_e164(data.parent_phone)
 
-    family = Family(onboarding_status=OnboardingStatus.pending)
+    family = Family(status=FamilyStatus.pending_verification)
     family.members = [
         Member(
             role=MemberRole.child,
@@ -32,6 +33,7 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
         ),
     ]
     initialize_onboarding(family)
+    create_invites_for_family(family)
 
     db.add(family)
     db.commit()

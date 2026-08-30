@@ -1,6 +1,7 @@
 import uuid
 
-from app.models.family import Family, OnboardingStatus
+from app.models.family import Family, FamilyStatus
+from app.models.family_invite import FamilyInvite
 from app.models.member import Member, MemberRole
 
 
@@ -27,7 +28,17 @@ def test_create_family_success(client, db_session):
     family_id = uuid.UUID(body["family_id"])
     family = db_session.get(Family, family_id)
     assert family is not None
-    assert family.onboarding_status == OnboardingStatus.pending
+    assert family.status == FamilyStatus.pending_verification
+
+    assert len(body["invites"]) == 2
+    roles = {invite["role"] for invite in body["invites"]}
+    assert roles == {"child", "parent"}
+    for invite in body["invites"]:
+        assert invite["token"] in invite["invite_url"]
+
+    invites = db_session.query(FamilyInvite).filter(FamilyInvite.family_id == family_id).all()
+    assert len(invites) == 2
+    assert all(invite.used_at is None for invite in invites)
 
     members = db_session.query(Member).filter(Member.family_id == family.id).all()
     assert len(members) == 2

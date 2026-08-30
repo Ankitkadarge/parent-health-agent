@@ -9,8 +9,9 @@ from sqlalchemy.sql import func
 from app.core.db import Base
 
 
-class OnboardingStatus(str, enum.Enum):
-    pending = "pending"
+class FamilyStatus(str, enum.Enum):
+    pending_verification = "pending_verification"
+    onboarding = "onboarding"
     active = "active"
 
 
@@ -18,9 +19,9 @@ class Family(Base):
     __tablename__ = "families"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    onboarding_status: Mapped[OnboardingStatus] = mapped_column(
-        Enum(OnboardingStatus, name="onboarding_status"),
-        default=OnboardingStatus.pending,
+    status: Mapped[FamilyStatus] = mapped_column(
+        Enum(FamilyStatus, name="family_status"),
+        default=FamilyStatus.pending_verification,
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
@@ -33,4 +34,7 @@ class Family(Base):
     )
     onboarding_session: Mapped["OnboardingSession"] = relationship(
         back_populates="family", uselist=False, cascade="all, delete-orphan"
+    )
+    invites: Mapped[list["FamilyInvite"]] = relationship(
+        back_populates="family", cascade="all, delete-orphan"
     )

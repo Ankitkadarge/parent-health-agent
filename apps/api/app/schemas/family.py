@@ -1,6 +1,9 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
+
+from app.models.member import MemberRole
 
 
 class FamilyCreateRequest(BaseModel):
@@ -19,5 +22,13 @@ class FamilyCreateRequest(BaseModel):
         return value
 
 
+class FamilyInviteOut(BaseModel):
+    role: MemberRole
+    token: str
+    invite_url: str
+    expires_at: datetime
+
+
 class FamilyCreateResponse(BaseModel):
     family_id: uuid.UUID
+    invites: list[FamilyInviteOut]

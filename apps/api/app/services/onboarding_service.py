@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.family import Family
+from app.models.family import Family, FamilyStatus
 from app.models.member import Member, MemberRole
 from app.models.onboarding_answer import OnboardingAnswer
 from app.models.onboarding_session import OnboardingSession, OnboardingSessionStatus
@@ -228,6 +228,7 @@ def submit_onboarding_answer(
         session.status = OnboardingSessionStatus.completed
         session.current_step = None
         session.completed_at = datetime.now(timezone.utc)
+        family.status = FamilyStatus.active
 
     db.commit()
     db.refresh(session)

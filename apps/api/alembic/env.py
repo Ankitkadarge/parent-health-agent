@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.db import Base
 from app.models import (  # noqa: F401  (ensures models are registered on Base)
     family,
+    family_invite,
     member,
     onboarding_answer,
     onboarding_session,

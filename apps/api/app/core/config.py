@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/parent_health_agent"
     cors_origins: str = "http://localhost:3000"
+    whatsapp_invite_base_url: str = "http://localhost:3000/join"
 
     @property
     def cors_origins_list(self) -> list[str]:

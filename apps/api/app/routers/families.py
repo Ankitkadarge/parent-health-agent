@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.db import get_db
-from app.schemas.family import FamilyCreateRequest, FamilyCreateResponse
+from app.schemas.family import FamilyCreateRequest, FamilyCreateResponse, FamilyInviteOut
 from app.services.family_service import create_family
 from app.utils.phone import InvalidPhoneNumberError
 
@@ -18,4 +19,15 @@ def create_family_endpoint(
     except InvalidPhoneNumberError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return FamilyCreateResponse(family_id=family.id)
+    return FamilyCreateResponse(
+        family_id=family.id,
+        invites=[
+            FamilyInviteOut(
+                role=invite.member.role,
+                token=invite.token,
+                invite_url=f"{settings.whatsapp_invite_base_url}?token={invite.token}",
+                expires_at=invite.expires_at,
+            )
+            for invite in family.invites
+        ],
+    )

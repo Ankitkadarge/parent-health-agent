@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models.family import Family
+from app.models.family import Family, FamilyStatus
 from app.models.member import Member
 from app.models.onboarding_session import OnboardingSession, OnboardingSessionStatus
 from app.models.whatsapp_identity import WhatsappIdentity
@@ -32,6 +32,31 @@ def resolve_whatsapp_context(db: Session, phone_e164: str) -> dict:
     no WhatsApp/Hermes SDK calls here, just business logic over our own state.
     """
     identity, member, family, session = resolve_whatsapp_identity(db, phone_e164)
+
+    if identity.verified_at is None:
+        return {
+            "action": "verify_or_join",
+            "family_id": family.id,
+            "member_id": member.id,
+            "role": member.role,
+        }
+
+    if family.status == FamilyStatus.pending_verification:
+        other_identity = (
+            db.query(WhatsappIdentity)
+            .filter(
+                WhatsappIdentity.family_id == family.id,
+                WhatsappIdentity.member_id != member.id,
+            )
+            .first()
+        )
+        return {
+            "action": "waiting_for_verification",
+            "family_id": family.id,
+            "member_id": member.id,
+            "role": member.role,
+            "waiting_on_role": other_identity.role.value if other_identity else None,
+        }
 
     if session.status == OnboardingSessionStatus.pending:
         return {

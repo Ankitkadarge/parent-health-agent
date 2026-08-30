@@ -2,7 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.schemas.whatsapp import WhatsappContextOut, WhatsappResolveOnboardingOut, WhatsappResolveOut
+from app.schemas.whatsapp import (
+    WhatsappContextOut,
+    WhatsappJoinRequest,
+    WhatsappJoinResponse,
+    WhatsappResolveOnboardingOut,
+    WhatsappResolveOut,
+)
+from app.services.verification_service import (
+    InviteAlreadyUsedError,
+    InviteExpiredError,
+    InviteNotFoundError,
+    InvitePhoneMismatchError,
+    join_via_invite,
+)
 from app.services.whatsapp_resolution_service import (
     WhatsappIdentityNotFoundError,
     resolve_whatsapp_context,
@@ -56,3 +69,29 @@ def context_endpoint(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return WhatsappContextOut(**context)
+
+
+@router.post("/join", response_model=WhatsappJoinResponse)
+def join_endpoint(
+    payload: WhatsappJoinRequest, db: Session = Depends(get_db)
+) -> WhatsappJoinResponse:
+    normalized_phone = _normalize_phone(payload.phone)
+
+    try:
+        member, identity, family = join_via_invite(db, payload.token, normalized_phone)
+    except InviteNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InviteAlreadyUsedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except InviteExpiredError as exc:
+        raise HTTPException(status_code=410, detail=str(exc)) from exc
+    except InvitePhoneMismatchError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    return WhatsappJoinResponse(
+        family_id=family.id,
+        member_id=member.id,
+        role=member.role,
+        verified_at=identity.verified_at,
+        family_status=family.status,
+    )
