@@ -1,17 +1,11 @@
-import logging
-
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.models.family import Family, FamilyStatus
 from app.models.member import Member, MemberRole
 from app.schemas.family import FamilyCreateRequest
 from app.services.onboarding_service import initialize_onboarding
 from app.services.verification_service import create_invites_for_family
-from app.services.whatsapp_group_service import WhatsappGroupCreationError, create_whatsapp_group
 from app.utils.phone import to_e164
-
-logger = logging.getLogger(__name__)
 
 
 def create_family(db: Session, data: FamilyCreateRequest) -> Family:
@@ -44,13 +38,4 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
     db.add(family)
     db.commit()
     db.refresh(family)
-
-    try:
-        group_name = settings.whatsapp_group_name_template.format(parent_name=data.parent_name)
-        family.whatsapp_group_id = create_whatsapp_group(group_name, [child_phone, parent_phone])
-        db.commit()
-        db.refresh(family)
-    except WhatsappGroupCreationError as exc:
-        logger.warning("WhatsApp group creation failed for family %s: %s", family.id, exc)
-
     return family

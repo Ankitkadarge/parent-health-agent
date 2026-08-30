@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, String, Uuid
+from sqlalchemy import Enum, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -25,7 +25,6 @@ class Family(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
-    whatsapp_group_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     members: Mapped[list["Member"]] = relationship(
         back_populates="family", cascade="all, delete-orphan"
