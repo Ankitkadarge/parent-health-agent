@@ -7,7 +7,10 @@ backend API, and the database (source of truth for all family/health data).
 ## Structure
 
 - `apps/web` — Next.js landing page (family signup form)
-- `apps/api` — FastAPI backend (families, members, PostgreSQL via SQLAlchemy + Alembic)
+- `apps/api` — FastAPI backend (families, members, onboarding, PostgreSQL via SQLAlchemy + Alembic)
+- `hermes` — WhatsApp conversational layer: a Hermes skill (`hermes/skills/parent-health-onboarding`)
+  and a thin backend client. Not the Hermes install itself — this is what gets copied into a
+  running Hermes profile's `skills/` directory. See `hermes/skills/parent-health-onboarding/SKILL.md`.
 
 ## Backend setup
 
@@ -40,5 +43,7 @@ npm run dev
 - Phone numbers are stored internally in E.164 format (e.g. `+919876543210`).
 - Health-related business logic lives under `apps/api/app/services/` so it
   can be exposed to Hermes as callable tools later, without going through HTTP.
-- No medical advice, medication logic, food analysis, or WhatsApp automation
-  is implemented yet — this milestone is onboarding only.
+- No medical advice, medication logic, or food analysis is implemented yet.
+- The Hermes skill under `hermes/` talks to the backend over HTTP via
+  `backend_client.py`; it has not yet been installed into a live Hermes
+  profile or tested against a real WhatsApp conversation.
