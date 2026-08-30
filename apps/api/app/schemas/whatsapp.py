@@ -1,0 +1,31 @@
+import uuid
+
+from pydantic import BaseModel
+
+from app.models.member import MemberRole
+from app.models.onboarding_session import OnboardingSessionStatus
+from app.services.onboarding_questions import OnboardingQuestion
+
+
+class WhatsappResolveOnboardingOut(BaseModel):
+    status: OnboardingSessionStatus
+    current_step: str | None
+
+
+class WhatsappResolveOut(BaseModel):
+    family_id: uuid.UUID
+    member_id: uuid.UUID
+    role: MemberRole
+    phone_e164: str
+    verified: bool
+    onboarding: WhatsappResolveOnboardingOut
+
+
+class WhatsappContextOut(BaseModel):
+    action: str
+    family_id: uuid.UUID | None = None
+    member_id: uuid.UUID | None = None
+    role: MemberRole | None = None
+    target_role: str | None = None
+    current_step: str | None = None
+    question: OnboardingQuestion | None = None

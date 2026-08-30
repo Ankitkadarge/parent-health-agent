@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import families
+from app.routers import families, onboarding, whatsapp
 
 app = FastAPI(title="Parent Health Agent API")
 
@@ -15,6 +15,8 @@ app.add_middleware(
 )
 
 app.include_router(families.router)
+app.include_router(onboarding.router)
+app.include_router(whatsapp.router)
 
 
 @app.get("/health")

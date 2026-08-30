@@ -19,11 +19,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     onboarding_status = postgresql.ENUM(
-        "pending", "active", name="onboarding_status"
-    )
+    "pending", "active", name="onboarding_status", create_type=False
+)
     onboarding_status.create(op.get_bind(), checkfirst=True)
 
-    member_role = postgresql.ENUM("child", "parent", name="member_role")
+    member_role = postgresql.ENUM(
+    "child", "parent", name="member_role", create_type=False
+)
     member_role.create(op.get_bind(), checkfirst=True)
 
     op.create_table(

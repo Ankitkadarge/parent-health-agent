@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.family import Family, OnboardingStatus
 from app.models.member import Member, MemberRole
 from app.schemas.family import FamilyCreateRequest
+from app.services.onboarding_service import initialize_onboarding
 from app.utils.phone import to_e164
 
 
@@ -30,6 +31,7 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
             preferred_language=data.parent_preferred_language,
         ),
     ]
+    initialize_onboarding(family)
 
     db.add(family)
     db.commit()

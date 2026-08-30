@@ -28,3 +28,9 @@ class Family(Base):
     members: Mapped[list["Member"]] = relationship(
         back_populates="family", cascade="all, delete-orphan"
     )
+    whatsapp_identities: Mapped[list["WhatsappIdentity"]] = relationship(
+        back_populates="family", cascade="all, delete-orphan"
+    )
+    onboarding_session: Mapped["OnboardingSession"] = relationship(
+        back_populates="family", uselist=False, cascade="all, delete-orphan"
+    )
