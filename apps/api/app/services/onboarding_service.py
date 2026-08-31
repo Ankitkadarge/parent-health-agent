@@ -18,12 +18,12 @@ from app.services.onboarding_questions import (
 )
 
 PROFILE_FIELD_BY_STEP = {
-    "conditions": "conditions",
-    "medications": "medications",
-    "dietary_preferences": "dietary_preferences",
-    "activity_level": "activity_level",
-    "reminder_preferences": "reminder_preferences",
+    "diagnosed_with_diabetes": "diagnosed_with_diabetes",
+    "taking_medication": "taking_medication",
+    "medicine_time": "medicine_time",
 }
+
+BOOLEAN_PROFILE_STEPS = {"diagnosed_with_diabetes", "taking_medication"}
 
 
 class OnboardingNotFoundError(Exception):
@@ -157,6 +157,12 @@ def _get_or_create_health_profile(
     return profile
 
 
+def _profile_value(key: str, normalized_value: Any) -> Any:
+    if key in BOOLEAN_PROFILE_STEPS:
+        return normalized_value == "Yes"
+    return normalized_value
+
+
 def submit_onboarding_answer(
     db: Session, family_id: uuid.UUID, member_role: MemberRole, key: str, value: Any
 ) -> tuple[OnboardingSession, OnboardingQuestion | None]:
@@ -212,16 +218,15 @@ def submit_onboarding_answer(
         )
     )
 
-    if key == "preferred_language":
-        answering_member.preferred_language = normalized_value
-    else:
-        parent_member = next((m for m in family.members if m.role == MemberRole.parent), None)
-        if parent_member is None:
-            raise OnboardingAnswerValidationError("No parent member found for this family.")
-        profile = _get_or_create_health_profile(db, family, parent_member)
-        setattr(profile, PROFILE_FIELD_BY_STEP[key], normalized_value)
+    parent_member = next((m for m in family.members if m.role == MemberRole.parent), None)
+    if parent_member is None:
+        raise OnboardingAnswerValidationError("No parent member found for this family.")
+    profile = _get_or_create_health_profile(db, family, parent_member)
+    setattr(profile, PROFILE_FIELD_BY_STEP[key], _profile_value(key, normalized_value))
+    if key == "taking_medication" and normalized_value == "No":
+        profile.medicine_time = None
 
-    next_question = get_next_question(key)
+    next_question = get_next_question(key, normalized_value)
     if next_question is not None:
         session.current_step = next_question.key
     else:

@@ -30,12 +30,9 @@ def answer(client, family_id, member_role, key, value):
 
 def complete_onboarding(client, family_id):
     client.post(f"/families/{family_id}/onboarding/start")
-    answer(client, family_id, "parent", "preferred_language", "English")
-    answer(client, family_id, "child", "conditions", ["None"])
-    answer(client, family_id, "child", "medications", "later")
-    answer(client, family_id, "child", "dietary_preferences", "none")
-    answer(client, family_id, "parent", "activity_level", "Moderate activity")
-    answer(client, family_id, "child", "reminder_preferences", ["Daily summary"])
+    answer(client, family_id, "parent", "diagnosed_with_diabetes", "Yes")
+    answer(client, family_id, "parent", "taking_medication", "Yes")
+    answer(client, family_id, "parent", "medicine_time", "7 PM")
 
 
 def test_resolve_known_child(client):
@@ -124,7 +121,7 @@ def test_context_in_progress_question_targeted_to_sender(client):
     assert body["action"] == "ask_question"
     assert body["family_id"] == family_id
     assert body["role"] == "parent"
-    assert body["question"]["key"] == "preferred_language"
+    assert body["question"]["key"] == "diagnosed_with_diabetes"
     assert "target_role" not in body
     assert "current_step" not in body
 
@@ -140,8 +137,8 @@ def test_context_in_progress_question_targeted_to_other_member(client):
 
     assert body["action"] == "waiting_for_other_member"
     assert body["target_role"] == "parent"
-    assert body["current_step"] == "preferred_language"
-    assert body["question"]["key"] == "preferred_language"
+    assert body["current_step"] == "diagnosed_with_diabetes"
+    assert body["question"]["key"] == "diagnosed_with_diabetes"
     assert "family_id" not in body
     assert "member_id" not in body
 
