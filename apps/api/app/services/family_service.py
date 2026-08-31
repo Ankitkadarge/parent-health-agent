@@ -1,11 +1,17 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.family import Family, FamilyStatus
 from app.models.member import Member, MemberRole
+from app.models.whatsapp_identity import WhatsappIdentity
 from app.schemas.family import FamilyCreateRequest
 from app.services.onboarding_service import initialize_onboarding
 from app.services.verification_service import create_invites_for_family
 from app.utils.phone import to_e164
+
+
+class DuplicatePhoneError(Exception):
+    """Raised when a phone number is already connected to a family."""
 
 
 def create_family(db: Session, data: FamilyCreateRequest) -> Family:
@@ -17,6 +23,14 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
     """
     child_phone = to_e164(data.child_phone)
     parent_phone = to_e164(data.parent_phone)
+
+    existing = (
+        db.query(WhatsappIdentity)
+        .filter(WhatsappIdentity.phone_e164.in_([child_phone, parent_phone]))
+        .first()
+    )
+    if existing is not None:
+        raise DuplicatePhoneError("This WhatsApp number is already connected to a family.")
 
     family = Family(status=FamilyStatus.pending_verification)
     family.members = [
@@ -36,6 +50,12 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
     create_invites_for_family(family)
 
     db.add(family)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise DuplicatePhoneError(
+            "This WhatsApp number is already connected to a family."
+        ) from exc
     db.refresh(family)
     return family

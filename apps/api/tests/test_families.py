@@ -77,3 +77,71 @@ def test_create_family_with_already_e164_phone(client, db_session):
     members = db_session.query(Member).filter(Member.family_id == family_id).all()
     phones = {m.phone_e164 for m in members}
     assert phones == {"+14155552671", "+14155552672"}
+
+
+def test_create_family_with_new_unique_numbers_returns_201(client):
+    response = client.post(
+        "/families",
+        json=valid_payload(child_phone="+14155553001", parent_phone="+14155553002"),
+    )
+    assert response.status_code == 201
+    assert "family_id" in response.json()
+
+
+def test_duplicate_child_phone_returns_409_not_500(client, db_session):
+    first = client.post(
+        "/families",
+        json=valid_payload(child_phone="+14155553010", parent_phone="+14155553011"),
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        "/families",
+        json=valid_payload(child_phone="+14155553010", parent_phone="+14155553099"),
+    )
+    assert second.status_code == 409
+    assert second.json() == {"detail": "This WhatsApp number is already connected to a family."}
+
+    # No trace of SQL/exception internals leaked to the client.
+    body_text = second.text.lower()
+    assert "sqlalchemy" not in body_text
+    assert "integrityerror" not in body_text
+    assert "unique constraint" not in body_text
+
+    # The rejected attempt left no partial data behind.
+    families = db_session.query(Family).all()
+    assert len(families) == 1
+
+
+def test_duplicate_parent_phone_returns_409_not_500(client, db_session):
+    first = client.post(
+        "/families",
+        json=valid_payload(child_phone="+14155553020", parent_phone="+14155553021"),
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        "/families",
+        json=valid_payload(child_phone="+14155553098", parent_phone="+14155553021"),
+    )
+    assert second.status_code == 409
+    assert second.json() == {"detail": "This WhatsApp number is already connected to a family."}
+
+    families = db_session.query(Family).all()
+    assert len(families) == 1
+
+
+def test_submitting_the_same_family_twice_returns_409_on_second_attempt(client, db_session):
+    payload = valid_payload(child_phone="+14155553030", parent_phone="+14155553031")
+
+    first = client.post("/families", json=payload)
+    assert first.status_code == 201
+
+    second = client.post("/families", json=payload)
+    assert second.status_code == 409
+    assert second.json() == {"detail": "This WhatsApp number is already connected to a family."}
+
+    families = db_session.query(Family).all()
+    assert len(families) == 1
+    members = db_session.query(Member).all()
+    assert len(members) == 2

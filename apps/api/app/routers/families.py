@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.db import get_db
 from app.schemas.family import FamilyCreateRequest, FamilyCreateResponse, FamilyInviteOut
-from app.services.family_service import create_family
+from app.services.family_service import DuplicatePhoneError, create_family
 from app.utils.phone import InvalidPhoneNumberError
 
 router = APIRouter(prefix="/families", tags=["families"])
@@ -18,6 +18,8 @@ def create_family_endpoint(
         family = create_family(db, payload)
     except InvalidPhoneNumberError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except DuplicatePhoneError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return FamilyCreateResponse(
         family_id=family.id,
