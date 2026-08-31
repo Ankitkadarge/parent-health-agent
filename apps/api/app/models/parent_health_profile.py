@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, ForeignKey, String, Text, Uuid
+from sqlalchemy import Boolean, JSON, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -23,6 +23,14 @@ class ParentHealthProfile(Base):
     parent_member_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("members.id", ondelete="CASCADE"), nullable=False, unique=True
     )
+
+    # Current MVP diabetes onboarding fields.
+    diagnosed_with_diabetes: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    taking_medication: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    medicine_time: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Kept for backwards compatibility with profiles created by the earlier,
+    # longer onboarding flow. New onboarding does not populate these fields.
     conditions: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     medications: Mapped[str | None] = mapped_column(Text, nullable=True)
     dietary_preferences: Mapped[str | None] = mapped_column(Text, nullable=True)
