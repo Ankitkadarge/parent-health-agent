@@ -38,12 +38,23 @@ npm install
 npm run dev
 ```
 
+## MVP onboarding
+
+After both family members verify their invitation links, the parent is asked a short flow:
+
+1. Have you been diagnosed with diabetes by a doctor? — `Yes` or `No`
+2. Are you currently taking any medication? — `Yes` or `No`
+3. What time do you usually take your medicine? — free text such as `7 PM`
+
+The third question is skipped when the medication answer is `No`.
+
 ## Notes
 
 - Phone numbers are stored internally in E.164 format (e.g. `+919876543210`).
 - Health-related business logic lives under `apps/api/app/services/` so it
   can be exposed to Hermes as callable tools later, without going through HTTP.
-- No medical advice, medication logic, or food analysis is implemented yet.
+- The app collects self-reported health information but does not provide medical advice,
+  medication changes, dosing guidance, diagnosis, or food analysis.
 - The Hermes skill under `hermes/` talks to the backend over HTTP via
   `backend_client.py`; it has not yet been installed into a live Hermes
   profile or tested against a real WhatsApp conversation.
