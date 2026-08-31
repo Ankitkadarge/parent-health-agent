@@ -70,16 +70,15 @@ def test_start_onboarding_transitions_to_in_progress_and_returns_question(client
     body = response.json()
 
     assert body["status"] == "in_progress"
-    assert body["current_step"] == "preferred_language"
-    assert body["question"]["key"] == "preferred_language"
+    assert body["current_step"] == "diagnosed_with_diabetes"
+    assert body["question"]["key"] == "diagnosed_with_diabetes"
     assert body["question"]["target"] == "parent"
     assert body["question"]["type"] == "choice"
-    assert "English" in body["question"]["options"]
-    assert "Other" in body["question"]["options"]
+    assert body["question"]["options"] == ["Yes", "No"]
 
     state = client.get(f"/families/{family_id}/onboarding").json()
     assert state["status"] == "in_progress"
-    assert state["current_step"] == "preferred_language"
+    assert state["current_step"] == "diagnosed_with_diabetes"
 
 
 def test_start_onboarding_twice_replays_same_question(client, db_session):
