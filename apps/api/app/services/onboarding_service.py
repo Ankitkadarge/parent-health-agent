@@ -223,6 +223,8 @@ def submit_onboarding_answer(
         raise OnboardingAnswerValidationError("No parent member found for this family.")
     profile = _get_or_create_health_profile(db, family, parent_member)
     setattr(profile, PROFILE_FIELD_BY_STEP[key], _profile_value(key, normalized_value))
+    if key == "taking_medication" and normalized_value == "No":
+        profile.medicine_time = None
 
     next_question = get_next_question(key, normalized_value)
     if next_question is not None:
