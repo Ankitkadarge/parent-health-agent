@@ -1,18 +1,42 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.member import MemberRole
 
 
+SUPPORTED_LANGUAGES = (
+    "English",
+    "Hindi",
+    "Marathi",
+    "Gujarati",
+    "Tamil",
+    "Telugu",
+    "Kannada",
+    "Bengali",
+    "Punjabi",
+    "Other",
+)
+
+
 class FamilyCreateRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
     child_name: str = Field(min_length=1, max_length=255)
-    child_phone: str = Field(min_length=1)
+    child_phone: str = Field(min_length=1, max_length=32)
     parent_name: str = Field(min_length=1, max_length=255)
-    parent_phone: str = Field(min_length=1)
+    parent_phone: str = Field(min_length=1, max_length=32)
     parent_preferred_language: str = Field(min_length=1, max_length=50)
-    consent: bool
+    consent: bool = Field(strict=True)
+
+    @field_validator("parent_preferred_language")
+    @classmethod
+    def language_must_be_supported(cls, value: str) -> str:
+        if value not in SUPPORTED_LANGUAGES:
+            allowed = ", ".join(SUPPORTED_LANGUAGES)
+            raise ValueError(f"Choose one of the supported languages: {allowed}.")
+        return value
 
     @field_validator("consent")
     @classmethod
@@ -32,4 +56,4 @@ class FamilyInviteOut(BaseModel):
 class FamilyCreateResponse(BaseModel):
     family_id: uuid.UUID
     invites: list[FamilyInviteOut]
-    whatsapp_group_created: bool
+    whatsapp_group_created: bool = False

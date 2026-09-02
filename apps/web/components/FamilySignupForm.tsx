@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { ApiError, createFamily, FamilyInvite } from "@/lib/api";
+import { phoneFingerprint } from "@/lib/phone";
 
 const LANGUAGE_OPTIONS = [
   "English",
@@ -13,6 +14,7 @@ const LANGUAGE_OPTIONS = [
   "Kannada",
   "Bengali",
   "Punjabi",
+  "Other",
 ];
 
 type FormState = {
@@ -22,6 +24,7 @@ type FormState = {
   parentPhone: string;
   parentLanguage: string;
   consent: boolean;
+  website: string;
 };
 
 const initialState: FormState = {
@@ -31,43 +34,84 @@ const initialState: FormState = {
   parentPhone: "",
   parentLanguage: "English",
   consent: false,
+  website: "",
 };
+
 
 export default function FamilySignupForm() {
   const [form, setForm] = useState<FormState>(initialState);
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorRequestId, setErrorRequestId] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [invites, setInvites] = useState<FamilyInvite[]>([]);
   const [groupCreated, setGroupCreated] = useState(false);
 
-  function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  function updateField<K extends keyof FormState>(
+    field: K,
+    value: FormState[K],
+  ) {
+    setForm((previous) => ({ ...previous, [field]: value }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("submitting");
     setErrorMessage(null);
+    setErrorRequestId(null);
+
+    const childName = form.childName.trim();
+    const childPhone = form.childPhone.trim();
+    const parentName = form.parentName.trim();
+    const parentPhone = form.parentPhone.trim();
+
+    if (
+      phoneFingerprint(childPhone) &&
+      phoneFingerprint(childPhone) === phoneFingerprint(parentPhone)
+    ) {
+      setStatus("error");
+      setErrorMessage(
+        "Your WhatsApp number and your parent's WhatsApp number must be different.",
+      );
+      return;
+    }
+
+    setStatus("submitting");
 
     try {
       const result = await createFamily({
-        child_name: form.childName,
-        child_phone: form.childPhone,
-        parent_name: form.parentName,
-        parent_phone: form.parentPhone,
+        child_name: childName,
+        child_phone: childPhone,
+        parent_name: parentName,
+        parent_phone: parentPhone,
         parent_preferred_language: form.parentLanguage,
         consent: form.consent,
+        website: form.website,
       });
+
+      setForm((previous) => ({
+        ...previous,
+        childName,
+        childPhone,
+        parentName,
+        parentPhone,
+      }));
       setFamilyId(result.family_id);
       setInvites(result.invites);
       setGroupCreated(result.whatsapp_group_created);
       setStatus("success");
-    } catch (err) {
+    } catch (error) {
       setStatus("error");
-      setErrorMessage(
-        err instanceof ApiError ? err.message : "Could not reach the server. Please try again."
-      );
+
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+        setErrorRequestId(error.requestId);
+      } else {
+        setErrorMessage(
+          "Could not reach the server. Please check your connection and try again.",
+        );
+      }
     }
   }
 
@@ -77,7 +121,7 @@ export default function FamilySignupForm() {
     const parentInvite = invites.find((invite) => invite.role === "parent");
 
     return (
-      <div className="success-state">
+      <div className="success-state" aria-live="polite">
         <div className="success-icon">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
             <path
@@ -92,13 +136,13 @@ export default function FamilySignupForm() {
         <p className="success-title">You&apos;re on the list</p>
         {groupCreated ? (
           <p className="success-sub">
-            We&apos;ve created a WhatsApp group with you and {parentFirstName} — check WhatsApp
-            now to get started.
+            We&apos;ve created a WhatsApp group with you and {parentFirstName}.
+            Check WhatsApp now to get started.
           </p>
         ) : (
           <p className="success-sub">
-            We&apos;ve created your family profile. Use the links below on WhatsApp to verify
-            yourself and {parentFirstName}.
+            We&apos;ve created your family profile. Open each link below to
+            verify yourself and {parentFirstName}.
           </p>
         )}
 
@@ -127,19 +171,30 @@ export default function FamilySignupForm() {
         <div className="form-row">
           <input
             id="childName"
+            name="childName"
             required
+            maxLength={255}
+            autoComplete="name"
             value={form.childName}
-            onChange={(e) => updateField("childName", e.target.value)}
+            onChange={(event) =>
+              updateField("childName", event.target.value)
+            }
             placeholder="Your name"
             aria-label="Your name"
             disabled={status === "submitting"}
           />
           <input
             id="childPhone"
+            name="childPhone"
             required
             type="tel"
+            inputMode="tel"
+            maxLength={32}
+            autoComplete="tel"
             value={form.childPhone}
-            onChange={(e) => updateField("childPhone", e.target.value)}
+            onChange={(event) =>
+              updateField("childPhone", event.target.value)
+            }
             placeholder="Your WhatsApp number"
             aria-label="Your WhatsApp number"
             disabled={status === "submitting"}
@@ -152,19 +207,30 @@ export default function FamilySignupForm() {
         <div className="form-row">
           <input
             id="parentName"
+            name="parentName"
             required
+            maxLength={255}
+            autoComplete="off"
             value={form.parentName}
-            onChange={(e) => updateField("parentName", e.target.value)}
+            onChange={(event) =>
+              updateField("parentName", event.target.value)
+            }
             placeholder="Parent's name"
             aria-label="Parent's name"
             disabled={status === "submitting"}
           />
           <input
             id="parentPhone"
+            name="parentPhone"
             required
             type="tel"
+            inputMode="tel"
+            maxLength={32}
+            autoComplete="off"
             value={form.parentPhone}
-            onChange={(e) => updateField("parentPhone", e.target.value)}
+            onChange={(event) =>
+              updateField("parentPhone", event.target.value)
+            }
             placeholder="Parent's WhatsApp number"
             aria-label="Parent's WhatsApp number"
             disabled={status === "submitting"}
@@ -172,34 +238,74 @@ export default function FamilySignupForm() {
         </div>
         <select
           id="parentLanguage"
+          name="parentLanguage"
           value={form.parentLanguage}
-          onChange={(e) => updateField("parentLanguage", e.target.value)}
+          onChange={(event) =>
+            updateField("parentLanguage", event.target.value)
+          }
           aria-label="Parent's preferred language"
           disabled={status === "submitting"}
         >
-          {LANGUAGE_OPTIONS.map((lang) => (
-            <option key={lang} value={lang}>
-              {lang}
+          {LANGUAGE_OPTIONS.map((language) => (
+            <option key={language} value={language}>
+              {language}
             </option>
           ))}
         </select>
       </fieldset>
 
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-10000px",
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+        }}
+      >
+        <label htmlFor="website">
+          Website
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={form.website}
+            onChange={(event) =>
+              updateField("website", event.target.value)
+            }
+          />
+        </label>
+      </div>
+
       <label className="form-check">
         <input
           type="checkbox"
           checked={form.consent}
-          onChange={(e) => updateField("consent", e.target.checked)}
+          onChange={(event) =>
+            updateField("consent", event.target.checked)
+          }
           required
           disabled={status === "submitting"}
         />
         <span>
-          I confirm my parent has agreed to receive WhatsApp messages from this service about
-          their health check-ins.
+          I confirm my parent has agreed to receive WhatsApp messages from this
+          service about their health check-ins.
         </span>
       </label>
 
-      {status === "error" && errorMessage && <div className="error-msg">{errorMessage}</div>}
+      {status === "error" && errorMessage && (
+        <div className="error-msg" role="alert" aria-live="polite">
+          {errorMessage}
+          {errorRequestId && (
+            <small style={{ display: "block", marginTop: "6px" }}>
+              Support reference: {errorRequestId}
+            </small>
+          )}
+        </div>
+      )}
 
       <button type="submit" disabled={status === "submitting"}>
         {status === "submitting" ? "Submitting…" : "Get started"}

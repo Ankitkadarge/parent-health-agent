@@ -1,6 +1,7 @@
 import logging
+from dataclasses import dataclass
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -10,7 +11,10 @@ from app.models.whatsapp_identity import WhatsappIdentity
 from app.schemas.family import FamilyCreateRequest
 from app.services.onboarding_service import initialize_onboarding
 from app.services.verification_service import create_invites_for_family
-from app.services.whatsapp_group_service import WhatsappGroupCreationError, create_whatsapp_group
+from app.services.whatsapp_group_service import (
+    WhatsappGroupCreationError,
+    create_whatsapp_group,
+)
 from app.utils.phone import to_e164
 
 logger = logging.getLogger(__name__)
@@ -20,15 +24,76 @@ class DuplicatePhoneError(Exception):
     """Raised when a phone number is already connected to a family."""
 
 
-def create_family(db: Session, data: FamilyCreateRequest) -> Family:
-    """Create a family with its child and parent members.
+class SamePhoneNumberError(Exception):
+    """Raised when child and parent normalize to the same WhatsApp number."""
 
-    This is intentionally kept independent of the HTTP layer so it can later
-    be called directly by the Hermes conversational runtime as a tool,
-    without going through the API.
-    """
+
+@dataclass(frozen=True)
+class CreatedFamily:
+    family: Family
+    invite_tokens: dict[MemberRole, str]
+
+
+def _try_create_whatsapp_group(
+    db: Session,
+    family: Family,
+    *,
+    parent_name: str,
+    child_phone: str,
+    parent_phone: str,
+) -> None:
+    if not settings.whatsapp_group_creation_enabled:
+        return
+
+    if not settings.normalized_bridge_base_url:
+        logger.warning(
+            "WhatsApp group creation is enabled but WHATSAPP_BRIDGE_BASE_URL is empty"
+        )
+        return
+
+    try:
+        group_name = settings.whatsapp_group_name_template.format(
+            parent_name=parent_name
+        )
+        group_id = create_whatsapp_group(
+            group_name,
+            [child_phone, parent_phone],
+        )
+    except WhatsappGroupCreationError as exc:
+        logger.warning(
+            "WhatsApp group creation failed for family %s: %s",
+            family.id,
+            exc,
+        )
+        return
+
+    family.whatsapp_group_id = group_id
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        family.whatsapp_group_id = None
+        logger.exception(
+            "Created WhatsApp group but could not store its id for family %s",
+            family.id,
+        )
+        return
+
+    db.refresh(family)
+
+
+def create_family(
+    db: Session,
+    data: FamilyCreateRequest,
+) -> CreatedFamily:
+    """Create a family and its one-time verification invitations."""
     child_phone = to_e164(data.child_phone)
     parent_phone = to_e164(data.parent_phone)
+
+    if child_phone == parent_phone:
+        raise SamePhoneNumberError(
+            "Your WhatsApp number and your parent's WhatsApp number must be different."
+        )
 
     existing = (
         db.query(WhatsappIdentity)
@@ -36,7 +101,9 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
         .first()
     )
     if existing is not None:
-        raise DuplicatePhoneError("This WhatsApp number is already connected to a family.")
+        raise DuplicatePhoneError(
+            "One of these WhatsApp numbers is already connected to a family."
+        )
 
     family = Family(status=FamilyStatus.pending_verification)
     family.members = [
@@ -53,7 +120,7 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
         ),
     ]
     initialize_onboarding(family)
-    create_invites_for_family(family)
+    invite_tokens = create_invites_for_family(family)
 
     db.add(family)
     try:
@@ -61,16 +128,18 @@ def create_family(db: Session, data: FamilyCreateRequest) -> Family:
     except IntegrityError as exc:
         db.rollback()
         raise DuplicatePhoneError(
-            "This WhatsApp number is already connected to a family."
+            "One of these WhatsApp numbers is already connected to a family."
         ) from exc
+
     db.refresh(family)
-
-    try:
-        group_name = settings.whatsapp_group_name_template.format(parent_name=data.parent_name)
-        family.whatsapp_group_id = create_whatsapp_group(group_name, [child_phone, parent_phone])
-        db.commit()
-        db.refresh(family)
-    except WhatsappGroupCreationError as exc:
-        logger.warning("WhatsApp group creation failed for family %s: %s", family.id, exc)
-
-    return family
+    _try_create_whatsapp_group(
+        db,
+        family,
+        parent_name=data.parent_name,
+        child_phone=child_phone,
+        parent_phone=parent_phone,
+    )
+    return CreatedFamily(
+        family=family,
+        invite_tokens=invite_tokens,
+    )

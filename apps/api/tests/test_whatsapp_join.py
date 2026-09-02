@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from app.models.family import Family, FamilyStatus
 from app.models.family_invite import FamilyInvite
 from app.models.whatsapp_identity import WhatsappIdentity
+from app.services.verification_service import hash_invite_token
 
 
 def create_family(client, child_phone="9876543210", parent_phone="9876500000"):
@@ -24,7 +25,10 @@ def join(client, token, phone):
     return client.post("/whatsapp/join", json={"token": token, "phone": phone})
 
 
-def test_join_verifies_one_member_family_stays_pending_verification(client, db_session):
+def test_join_verifies_one_member_family_stays_pending_verification(
+    client,
+    db_session,
+):
     family_id, child_phone, _, tokens = create_family(client)
 
     response = join(client, tokens["child"], child_phone)
@@ -39,7 +43,10 @@ def test_join_verifies_one_member_family_stays_pending_verification(client, db_s
     fid = uuid.UUID(family_id)
     identity = (
         db_session.query(WhatsappIdentity)
-        .filter(WhatsappIdentity.family_id == fid, WhatsappIdentity.phone_e164 == child_phone)
+        .filter(
+            WhatsappIdentity.family_id == fid,
+            WhatsappIdentity.phone_e164 == child_phone,
+        )
         .one()
     )
     assert identity.verified_at is not None
@@ -48,7 +55,10 @@ def test_join_verifies_one_member_family_stays_pending_verification(client, db_s
     assert family.status == FamilyStatus.pending_verification
 
 
-def test_join_both_members_transitions_family_to_onboarding(client, db_session):
+def test_join_both_members_transitions_family_to_onboarding(
+    client,
+    db_session,
+):
     family_id, child_phone, parent_phone, tokens = create_family(client)
 
     join(client, tokens["child"], child_phone)
@@ -59,6 +69,22 @@ def test_join_both_members_transitions_family_to_onboarding(client, db_session):
 
     family = db_session.get(Family, uuid.UUID(family_id))
     assert family.status == FamilyStatus.onboarding
+
+
+def test_raw_invite_token_is_not_stored(client, db_session):
+    family_id, _, _, tokens = create_family(client)
+
+    invites = (
+        db_session.query(FamilyInvite)
+        .filter(FamilyInvite.family_id == uuid.UUID(family_id))
+        .all()
+    )
+    stored_hashes = {invite.token_hash for invite in invites}
+
+    assert hash_invite_token(tokens["child"]) in stored_hashes
+    assert hash_invite_token(tokens["parent"]) in stored_hashes
+    assert tokens["child"] not in stored_hashes
+    assert tokens["parent"] not in stored_hashes
 
 
 def test_join_with_unknown_token_is_404(client):
@@ -85,8 +111,16 @@ def test_join_twice_with_same_token_is_409(client):
 def test_join_with_expired_token_is_410(client, db_session):
     _, child_phone, _, tokens = create_family(client)
 
-    invite = db_session.query(FamilyInvite).filter(FamilyInvite.token == tokens["child"]).one()
-    invite.expires_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
+    invite = (
+        db_session.query(FamilyInvite)
+        .filter(
+            FamilyInvite.token_hash == hash_invite_token(tokens["child"])
+        )
+        .one()
+    )
+    invite.expires_at = (
+        datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1)
+    )
     db_session.commit()
 
     response = join(client, tokens["child"], child_phone)
@@ -96,4 +130,17 @@ def test_join_with_expired_token_is_410(client, db_session):
 def test_join_rejects_invalid_phone(client):
     _, _, _, tokens = create_family(client)
     response = join(client, tokens["child"], "not-a-number")
+    assert response.status_code == 422
+
+
+def test_join_rejects_unknown_fields(client):
+    _, child_phone, _, tokens = create_family(client)
+    response = client.post(
+        "/whatsapp/join",
+        json={
+            "token": tokens["child"],
+            "phone": child_phone,
+            "admin": True,
+        },
+    )
     assert response.status_code == 422
