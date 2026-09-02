@@ -32,3 +32,4 @@ class FamilyInviteOut(BaseModel):
 class FamilyCreateResponse(BaseModel):
     family_id: uuid.UUID
     invites: list[FamilyInviteOut]
+    whatsapp_group_created: bool
