@@ -5,7 +5,7 @@ alembic==1.13.2
 psycopg[binary]==3.2.1
 pydantic==2.9.2
 pydantic-settings==2.5.2
-phonenumbers==8.13.45
+phonenumbers==9.0.38
 python-dotenv==1.0.1
 
 pytest==8.3.3
