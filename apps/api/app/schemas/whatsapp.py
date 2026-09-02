@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.family import FamilyStatus
 from app.models.member import MemberRole
@@ -35,8 +35,12 @@ class WhatsappContextOut(BaseModel):
 
 
 class WhatsappJoinRequest(BaseModel):
-    token: str
-    phone: str
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    # Accept any non-empty opaque token so unknown/expired links receive the
+    # endpoint's stable 404/410 semantics instead of a schema-length error.
+    token: str = Field(min_length=1, max_length=128)
+    phone: str = Field(min_length=1, max_length=32)
 
 
 class WhatsappJoinResponse(BaseModel):

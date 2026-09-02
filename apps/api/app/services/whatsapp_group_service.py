@@ -12,28 +12,57 @@ def _phone_to_jid(phone_e164: str) -> str:
 
 
 def create_whatsapp_group(subject: str, member_phones_e164: list[str]) -> str:
-    """Create a WhatsApp group via the local bridge. Raises
-    WhatsappGroupCreationError on any failure — callers decide whether that's
-    fatal (it generally shouldn't be: family creation must not depend on the
-    WhatsApp transport being up).
-    """
-    participants = [_phone_to_jid(phone) for phone in member_phones_e164]
+    """Create a WhatsApp group through the optional external bridge."""
+    base_url = settings.normalized_bridge_base_url
+    if not base_url:
+        raise WhatsappGroupCreationError("WhatsApp bridge is not configured.")
+
+    clean_subject = subject.strip()[:100]
+    participants = list(
+        dict.fromkeys(_phone_to_jid(phone) for phone in member_phones_e164)
+    )
+
+    if not clean_subject:
+        raise WhatsappGroupCreationError("WhatsApp group subject is empty.")
+    if len(participants) < 2:
+        raise WhatsappGroupCreationError(
+            "At least two distinct participants are required."
+        )
+
+    total_timeout = settings.whatsapp_group_timeout_seconds
+    timeout = httpx.Timeout(
+        total_timeout,
+        connect=min(5.0, total_timeout),
+    )
 
     try:
-        response = httpx.post(
-            f"{settings.whatsapp_bridge_base_url}/group-create",
-            json={"subject": subject, "participants": participants},
-            timeout=65.0,
-        )
+        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+            response = client.post(
+                f"{base_url}/group-create",
+                json={"subject": clean_subject, "participants": participants},
+            )
+    except httpx.TimeoutException as exc:
+        raise WhatsappGroupCreationError("WhatsApp bridge timed out.") from exc
     except httpx.HTTPError as exc:
-        raise WhatsappGroupCreationError(f"Could not reach WhatsApp bridge: {exc}") from exc
+        raise WhatsappGroupCreationError(
+            "Could not reach the WhatsApp bridge."
+        ) from exc
 
     if response.status_code != 200:
-        detail = response.json().get("error", response.text) if response.content else response.text
-        raise WhatsappGroupCreationError(f"Bridge returned {response.status_code}: {detail}")
+        raise WhatsappGroupCreationError(
+            f"WhatsApp bridge returned HTTP {response.status_code}."
+        )
 
-    body = response.json()
-    if not body.get("success") or not body.get("groupId"):
-        raise WhatsappGroupCreationError(f"Unexpected bridge response: {body}")
+    try:
+        body = response.json()
+    except ValueError as exc:
+        raise WhatsappGroupCreationError(
+            "WhatsApp bridge returned invalid JSON."
+        ) from exc
 
-    return body["groupId"]
+    if not isinstance(body, dict) or not body.get("success") or not body.get("groupId"):
+        raise WhatsappGroupCreationError(
+            "WhatsApp bridge returned an unexpected response."
+        )
+
+    return str(body["groupId"])

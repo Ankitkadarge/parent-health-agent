@@ -1,27 +1,28 @@
-import { NextResponse } from "next/server";
+import { jsonError, proxyJsonPost, requestIdFor } from "@/lib/server-api";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 45;
 
-const rawApiBaseUrl =
-  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-const API_BASE_URL = rawApiBaseUrl.replace(/\/$/, "");
-
-function errorResponse(detail: string, status: number) {
-  return NextResponse.json({ detail }, { status });
-}
+const MAX_BODY_BYTES = 4_000;
 
 export async function POST(request: Request) {
-  let body: unknown;
+  const requestId = requestIdFor(request);
+  const rawBody = await request.text();
 
-  try {
-    body = await request.json();
-  } catch {
-    return errorResponse("Request body must be valid JSON.", 400);
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+    return jsonError("Request body is too large.", 413, requestId);
   }
 
-  if (!body || typeof body !== "object") {
-    return errorResponse("Request body must be an object.", 400);
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return jsonError("Request body must be valid JSON.", 400, requestId);
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return jsonError("Request body must be an object.", 400, requestId);
   }
 
   const record = body as Record<string, unknown>;
@@ -29,59 +30,17 @@ export async function POST(request: Request) {
   const phone = typeof record.phone === "string" ? record.phone.trim() : "";
 
   if (!token || !phone) {
-    return errorResponse("Both invitation token and phone number are required.", 400);
-  }
-
-  if (!API_BASE_URL) {
-    return errorResponse("Verification service is not configured.", 500);
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20_000);
-
-  try {
-    const upstream = await fetch(`${API_BASE_URL}/whatsapp/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, phone }),
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    const raw = await upstream.text();
-    let responseBody: unknown = null;
-
-    if (raw) {
-      try {
-        responseBody = JSON.parse(raw);
-      } catch {
-        responseBody = {
-          detail: upstream.ok
-            ? "Verification succeeded, but the backend returned an unreadable response."
-            : "The verification service returned an unreadable error response.",
-        };
-      }
-    }
-
-    if (!responseBody || typeof responseBody !== "object") {
-      responseBody = {
-        detail: upstream.ok
-          ? "Verification succeeded."
-          : "The verification service returned an empty error response.",
-      };
-    }
-
-    return NextResponse.json(responseBody, { status: upstream.status });
-  } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      return errorResponse("The verification service timed out. Please try again.", 504);
-    }
-
-    return errorResponse(
-      "Could not reach the verification service. Please try again shortly.",
-      502
+    return jsonError(
+      "Both invitation token and phone number are required.",
+      400,
+      requestId,
     );
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  return proxyJsonPost(
+    "/whatsapp/join",
+    { token, phone },
+    requestId,
+    30_000,
+  );
 }
