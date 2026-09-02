@@ -37,7 +37,9 @@ class WhatsappContextOut(BaseModel):
 class WhatsappJoinRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    token: str = Field(min_length=20, max_length=128)
+    # Accept any non-empty opaque token so unknown/expired links receive the
+    # endpoint's stable 404/410 semantics instead of a schema-length error.
+    token: str = Field(min_length=1, max_length=128)
     phone: str = Field(min_length=1, max_length=32)
 
 
