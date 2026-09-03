@@ -1,0 +1,149 @@
+.page {
+  min-height: 100vh;
+  padding: 36px 20px 64px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(223, 242, 230, 0.9), transparent 28%),
+    radial-gradient(circle at 90% 18%, rgba(246, 214, 196, 0.6), transparent 24%),
+    #fbf8f2;
+  color: #15251d;
+}
+
+.shell {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 34px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 14px;
+  color: white;
+  background: linear-gradient(145deg, #1d6748, #4a946b);
+  box-shadow: 0 8px 20px rgba(30, 101, 71, 0.2);
+}
+
+.brandMark svg {
+  width: 22px;
+  height: 22px;
+}
+
+.card {
+  padding: clamp(28px, 6vw, 54px);
+  border: 1px solid rgba(21, 37, 29, 0.1);
+  border-radius: 32px;
+  background: rgba(255, 253, 248, 0.94);
+  box-shadow: 0 22px 60px rgba(28, 50, 38, 0.12);
+}
+
+.eyebrow {
+  display: inline-flex;
+  padding: 8px 12px;
+  border: 1px solid rgba(30, 101, 71, 0.16);
+  border-radius: 999px;
+  color: #1e6547;
+  background: #eef8f1;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 20px 0 14px;
+  font-size: clamp(32px, 6vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.updated {
+  margin: 0 0 30px;
+  color: #7a8a80;
+  font-size: 14px;
+}
+
+.prose h2 {
+  margin: 30px 0 10px;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.prose p,
+.prose li {
+  margin: 0 0 12px;
+  color: #3c4a41;
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+
+.prose ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.prose a {
+  color: #1e6547;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a352d;
+}
+
+.form input,
+.form textarea {
+  padding: 12px 14px;
+  border: 1px solid rgba(21, 37, 29, 0.16);
+  border-radius: 12px;
+  font: inherit;
+  background: #fff;
+}
+
+.form textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.submit {
+  justify-self: start;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: #1e6547;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status {
+  margin-top: 14px;
+  font-size: 14.5px;
+}

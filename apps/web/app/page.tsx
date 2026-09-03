@@ -73,7 +73,7 @@ export default function HomePage() {
           <div className="container hero-grid">
             <div>
               <span className="eyebrow">
-                <span className="dot"></span> WhatsApp check-ins for Indian families
+                <span className="dot"></span> WhatsApp family health setup for Indian families
               </span>
               <h1>
                 Stay close to
@@ -83,9 +83,8 @@ export default function HomePage() {
                 over WhatsApp
               </h1>
               <p>
-                A gentle daily check-in that talks to your parent in their own language on
-                WhatsApp — so you know how they&apos;re really doing, without having to ask
-                every day.
+                A simple WhatsApp setup that gets your parent&apos;s health basics recorded in
+                one place — so the family isn&apos;t starting from scratch every time it comes up.
               </p>
               <div className="hero-actions">
                 <a className="btn btn-primary" href="#signup">
@@ -153,11 +152,11 @@ export default function HomePage() {
                 </div>
                 <div className="wa-thread">
                   <div className="wa-bubble bot">
-                    Namaste! Which language do you prefer for our daily check-ins?
+                    Namaste! Have you been diagnosed with diabetes by a doctor?
                   </div>
-                  <div className="wa-bubble reply">Hindi theek rahega</div>
+                  <div className="wa-bubble reply">Haan, pichle saal se.</div>
                   <div className="wa-bubble bot">
-                    Bilkul. Aaj sugar level check kiya tha kya?
+                    Samajh gaya. Are you currently taking any medication for it?
                   </div>
                 </div>
               </div>
@@ -406,11 +405,11 @@ export default function HomePage() {
                 </p>
               </article>
               <article className="step reveal" ref={addReveal}>
-                <div className="step-num">03 — CHECK IN</div>
-                <h3>Gentle daily check-ins begin</h3>
+                <div className="step-num">03 — SET UP</div>
+                <h3>Answer a few quick questions on WhatsApp</h3>
                 <p>
-                  Structured questions in your parent&apos;s own language, with updates shared
-                  back with the family.
+                  A short structured conversation gets your parent&apos;s health basics
+                  recorded, so the family has them in one place.
                 </p>
               </article>
             </div>
@@ -431,18 +430,18 @@ export default function HomePage() {
 
             <div className="feature-grid">
               <article className="feature-large reveal" ref={addReveal}>
-                <h3>Feels more like a familiar check-in than a health form.</h3>
+                <h3>Feels more like a friendly chat than a health form.</h3>
                 <p>
-                  Structured questions, asked naturally, in your parent&apos;s own language —
-                  one small thing at a time.
+                  A short, structured setup conversation — one small question at a time —
+                  gets the basics recorded on WhatsApp itself.
                 </p>
                 <div className="dialogue">
-                  <div className="bubble bot">Namaste Uncle. Aaj lunch ke baad walk ke liye gaye the?</div>
-                  <div className="bubble parent">Haan, around 20 minutes. Thoda late ho gaya tha.</div>
+                  <div className="bubble bot">Namaste Uncle. Have you been diagnosed with diabetes by a doctor?</div>
+                  <div className="bubble parent">Haan, pichle saal se.</div>
                   <div className="bubble bot">
-                    That still counts. Kal bhi same time ke aas-paas rakhne ki koshish karenge?
+                    Samajh gaya. Are you currently taking any medication for it?
                   </div>
-                  <div className="bubble parent">Haan, theek hai.</div>
+                  <div className="bubble parent">Haan, subah shaam.</div>
                 </div>
               </article>
 
@@ -490,10 +489,10 @@ export default function HomePage() {
                 </article>
 
                 <article className="feature-small reveal" ref={addReveal} style={{ background: "#eef5f9" }}>
-                  <h3>Nine Indian languages, one thread</h3>
+                  <h3>Set up in the language your parent prefers</h3>
                   <p>
-                    English, Hindi, Marathi, Gujarati, Tamil, Telugu, Kannada, Bengali, and
-                    Punjabi — your parent replies in whatever language feels natural.
+                    You tell us your parent&apos;s preferred language during setup, so we know
+                    how to reach them going forward.
                   </p>
                 </article>
               </div>
