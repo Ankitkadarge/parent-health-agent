@@ -91,7 +91,6 @@ def root() -> dict[str, str]:
         "status": "ok",
         "health": "/health",
         "readiness": "/ready",
-        "whatsapp_status": "/whatsapp/cloud/status",
         "docs": "/docs",
     }
 
