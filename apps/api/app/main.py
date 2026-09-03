@@ -18,8 +18,11 @@ _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 app = FastAPI(
     title="Parent Health Agent API",
-    version="0.3.0",
-    description="Backend for family signup, verification, and onboarding.",
+    version="0.4.0",
+    description=(
+        "Backend for family signup, verification, hosted WhatsApp onboarding, "
+        "and health-profile setup."
+    ),
 )
 
 app.add_middleware(
@@ -88,6 +91,7 @@ def root() -> dict[str, str]:
         "status": "ok",
         "health": "/health",
         "readiness": "/ready",
+        "whatsapp_status": "/whatsapp/cloud/status",
         "docs": "/docs",
     }
 

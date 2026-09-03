@@ -43,7 +43,19 @@ def client(db_session):
 
 
 @pytest.fixture(autouse=True)
-def disable_external_group_creation(monkeypatch):
-    """Tests never call the external WhatsApp bridge unless they opt in."""
+def disable_external_integrations(monkeypatch):
+    """Tests never call external WhatsApp services unless they opt in."""
     monkeypatch.setattr(settings, "whatsapp_group_creation_enabled", False)
     monkeypatch.setattr(settings, "whatsapp_bridge_base_url", "")
+
+    monkeypatch.setattr(settings, "whatsapp_cloud_enabled", False)
+    monkeypatch.setattr(settings, "whatsapp_cloud_verify_token", "")
+    monkeypatch.setattr(settings, "whatsapp_cloud_app_secret", "")
+    monkeypatch.setattr(settings, "whatsapp_cloud_access_token", "")
+    monkeypatch.setattr(settings, "whatsapp_cloud_phone_number_id", "")
+    monkeypatch.setattr(settings, "whatsapp_cloud_auto_start_enabled", False)
+    monkeypatch.setattr(
+        settings,
+        "whatsapp_cloud_onboarding_template_name",
+        "",
+    )

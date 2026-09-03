@@ -12,6 +12,7 @@ from app.models import (  # noqa: F401  (ensures models are registered on Base)
     onboarding_answer,
     onboarding_session,
     parent_health_profile,
+    whatsapp_cloud_event,
     whatsapp_identity,
 )
 

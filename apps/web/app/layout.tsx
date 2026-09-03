@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Parent Health Agent — Stay connected to your parent's health",
+  title: "Parent Health Agent — WhatsApp family health setup",
   description:
-    "A WhatsApp companion that checks in on your parent's health so you don't have to worry alone.",
+    "A private beta that verifies family members and guides a short diabetes and medication setup over WhatsApp.",
 };
 
 export const viewport: Viewport = {
